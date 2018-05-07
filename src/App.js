@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import axios from 'axios';
 import PropTypes from 'prop-types';
 import './App.css';
+import 'font-awesome/css/font-awesome.min.css';
 
 const DEFAULT_QUERY = 'redux',
       DEFAULT_HPP = '100',
@@ -21,7 +22,8 @@ class App extends Component {
       results: null,
       searchKey: '',
       searchTerm: DEFAULT_QUERY,
-      error: null
+      error: null,
+      isLoading: false,
     };
 
     this.needsToSearchTopStories = this.needsToSearchTopStories.bind(this);
@@ -53,11 +55,14 @@ class App extends Component {
       results: {
         ...results,
         [searchKey]: { hits: updatedHits, page }
-      }
+      },
+      isLoading: false
     });
   }
 
   fetchSearchTopStories(searchTerm, page = 0) {
+    this.setState({ isLoading: true });
+
     axios(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}&${PARAM_HPP}${DEFAULT_HPP}`)
       .then(result => this._isMounted && this.setSearchTopStories(result.data))
       .catch(error => this._isMounted && this.setState({ error }));
@@ -103,7 +108,8 @@ class App extends Component {
     const { searchTerm, 
             results,
             searchKey, 
-            error
+            error,
+            isLoading
           } = this.state;
 
     const page = (
@@ -138,9 +144,11 @@ class App extends Component {
               />
         }
         <div className='interactions'>
-          <Button onClick={() => this.fetchSearchTopStories(searchKey, page + 1)}>
-            More
-          </Button>
+          <ButtonWithLoading
+            isLoading={isLoading}
+            onClick={() => this.fetchSearchTopStories(searchKey, page + 1)}>
+                More
+          </ButtonWithLoading>
         </div>
       </div>
     );
@@ -161,13 +169,6 @@ const Search = ({
       {children}
     </button>
   </form>
-
-Search.propTypes = {
-  value: PropTypes.string,
-  onChange: PropTypes.func.isRequired,
-  onSubmit: PropTypes.func.isRequired,
-  children: PropTypes.node.isRequired
-}
 
 const Table = ({list, onDismiss}) =>
   <div className='table'>
@@ -196,14 +197,10 @@ const Table = ({list, onDismiss}) =>
     )}
   </div>
 
-Table.propTypes = {
-  list: PropTypes.array.isRequired,
-  onDismiss: PropTypes.func.isRequired
-};
-
-const Button = ({onClick, 
-                 className, 
-                 children
+const Button = ({
+  onClick, 
+  className, 
+  children 
 }) =>
   <button 
     onClick={onClick} 
@@ -212,11 +209,15 @@ const Button = ({onClick,
     {children}
   </button>
 
-Button.propTypes = {
-  onClick: PropTypes.func.isRequired,
-  className: PropTypes.string,
-  children: PropTypes.node.isRequired
-};
+const Loading = () =>
+  <div><i className='fa fa-spinner fa-spin'></i></div>
+
+const withLoading = (Component) => ({ isLoading, ...rest}) =>
+  isLoading
+    ? <Loading />
+    : <Component {...rest} />
+
+const ButtonWithLoading = withLoading(Button);
 
 export default App;
 
